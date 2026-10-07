@@ -1,0 +1,32 @@
+package com.tomward.tripmatch.service
+
+import com.tomward.tripmatch.dto.CreateDestinationRequest
+import com.tomward.tripmatch.dto.DestinationResponse
+import com.tomward.tripmatch.model.Destination
+import com.tomward.tripmatch.repository.DestinationRepository
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+
+@Service
+class DestinationService(
+    private val destinationRepository: DestinationRepository
+) {
+
+    @Transactional
+    fun create(request: CreateDestinationRequest): DestinationResponse {
+        val destination = Destination(
+            city = request.city.trim(),
+            country = request.country.trim(),
+            averageCost = request.averageCost,
+            climate = request.climate,
+            flightTimeHours = request.flightTimeHours,
+            interests = request.interests
+                .map { it.trim().lowercase() }
+                .toMutableSet()
+        )
+
+        return DestinationResponse.from(
+            destinationRepository.save(destination)
+        )
+    }
+}
