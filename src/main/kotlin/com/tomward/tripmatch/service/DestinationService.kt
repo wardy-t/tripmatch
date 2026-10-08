@@ -2,6 +2,7 @@ package com.tomward.tripmatch.service
 
 import com.tomward.tripmatch.dto.CreateDestinationRequest
 import com.tomward.tripmatch.dto.DestinationResponse
+import com.tomward.tripmatch.exception.DestinationNotFoundException
 import com.tomward.tripmatch.model.Destination
 import com.tomward.tripmatch.repository.DestinationRepository
 import org.springframework.stereotype.Service
@@ -28,5 +29,13 @@ class DestinationService(
         return DestinationResponse.from(
             destinationRepository.save(destination)
         )
+    }
+
+    @Transactional(readOnly = true)
+    fun getById(id: Long): DestinationResponse {
+        val destination = destinationRepository.findById(id)
+            .orElseThrow { DestinationNotFoundException(id) }
+
+        return DestinationResponse.from(destination)
     }
 }

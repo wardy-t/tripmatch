@@ -18,6 +18,10 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPat
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.hamcrest.Matchers.matchesPattern
 import kotlin.test.assertEquals
+import com.tomward.tripmatch.model.Climate
+import com.tomward.tripmatch.model.Destination
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import java.math.BigDecimal
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -103,7 +107,67 @@ class DestinationControllerIntegrationTest {
                 .content(requestBody)
         )
             .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("\$.status").value(400))
+            .andExpect(jsonPath("\$.error").value("Bad Request"))
+            .andExpect(jsonPath("\$.message").value("Request validation failed"))
+            .andExpect(jsonPath("\$.path").value("/api/destinations"))
+            .andExpect(jsonPath("\$.fieldErrors.city").exists())
+            .andExpect(jsonPath("\$.fieldErrors.averageCost").exists())
+            .andExpect(jsonPath("\$.fieldErrors.flightTimeHours").exists())
+            .andExpect(jsonPath("\$.fieldErrors.interests").exists())
 
         assertEquals(0, destinationRepository.count())
     }
+
+    @Test
+    fun `retrieves a destination by id`() {
+        val destination = destinationRepository.saveAndFlush(
+            Destination(
+                city = "Lisbon",
+                country = "Portugal",
+                averageCost = BigDecimal("650.00"),
+                climate = Climate.WARM,
+                flightTimeHours = BigDecimal("2.8"),
+                interests = mutableSetOf("food", "culture")
+            )
+        )
+
+        val destinationId = requireNotNull(destination.id)
+
+        mockMvc.perform(
+            get("/api/destinations/{id}", destinationId)
+        )
+            .andExpect(status().isOk)
+            .andExpect(
+                content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
+            )
+            .andExpect(jsonPath("\$.id").value(destinationId))
+            .andExpect(jsonPath("\$.city").value("Lisbon"))
+            .andExpect(jsonPath("\$.country").value("Portugal"))
+            .andExpect(jsonPath("\$.climate").value("WARM"))
+            .andExpect(jsonPath("\$.interests.length()").value(2))
+    }
+
+    @Test
+    fun `returns structured 404 when destination does not exist`() {
+        mockMvc.perform(
+            get("/api/destinations/{id}", 999999)
+        )
+            .andExpect(status().isNotFound)
+            .andExpect(
+                content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
+            )
+            .andExpect(jsonPath("\$.status").value(404))
+            .andExpect(jsonPath("\$.error").value("Not Found"))
+            .andExpect(
+                jsonPath("\$.message")
+                    .value("Destination with id 999999 was not found")
+            )
+            .andExpect(
+                jsonPath("\$.path")
+                    .value("/api/destinations/999999")
+            )
+            .andExpect(jsonPath("\$.timestamp").exists())
+    }
+
 }
