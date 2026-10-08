@@ -26,6 +26,15 @@ import jakarta.validation.constraints.Size
 import com.tomward.tripmatch.dto.UpdateDestinationRequest
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PutMapping
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
+import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.responses.ApiResponses
+
+@Tag(
+    name = "Destinations",
+    description = "Create, manage, filter and rank travel destinations"
+)
 
 @RestController
 @RequestMapping("/api/destinations")
@@ -33,6 +42,19 @@ class DestinationController(
     private val destinationService: DestinationService
 ) {
 
+    @Operation(summary = "Create a destination")
+    @ApiResponses(
+        value = [
+            ApiResponse(
+                responseCode = "201",
+                description = "Destination created"
+            ),
+            ApiResponse(
+                responseCode = "400",
+                description = "Request validation failed"
+            )
+        ]
+    )
     @PostMapping
     fun createDestination(
         @Valid @RequestBody request: CreateDestinationRequest
@@ -44,6 +66,7 @@ class DestinationController(
             .body(destination)
     }
 
+    @Operation(summary = "List and filter destinations")
     @GetMapping
     fun getDestinations(
         @RequestParam(required = false) maxBudget: BigDecimal?,
@@ -62,6 +85,7 @@ class DestinationController(
         )
     }
 
+    @Operation(summary = "Rank destination recommendations")
     @GetMapping("/recommendations")
     fun getRecommendations(
         @RequestParam
@@ -95,6 +119,7 @@ class DestinationController(
         )
     }
 
+    @Operation(summary = "Retrieve a destination")
     @GetMapping("/{id}")
     fun getDestination(
         @PathVariable id: Long
@@ -104,6 +129,7 @@ class DestinationController(
         )
     }
 
+    @Operation(summary = "Replace a destination")
     @PutMapping("/{id}")
     fun updateDestination(
         @PathVariable id: Long,
@@ -114,6 +140,19 @@ class DestinationController(
         )
     }
 
+    @Operation(summary = "Delete a destination")
+    @ApiResponses(
+        value = [
+            ApiResponse(
+                responseCode = "204",
+                description = "Destination deleted"
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "Destination not found"
+            )
+        ]
+    )
     @DeleteMapping("/{id}")
     fun deleteDestination(
         @PathVariable id: Long
