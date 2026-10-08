@@ -468,6 +468,22 @@ class DestinationControllerIntegrationTest {
                     "\$.paths['/api/destinations/{id}'].delete.responses['204']"
                 ).exists()
             )
+            .andExpect(
+                jsonPath(
+                    "\$.paths['/api/destinations'].get.parameters[?(@.name == 'page')]"
+                ).exists()
+            )
+            .andExpect(
+                jsonPath(
+                    "\$.paths['/api/destinations'].get.parameters[?(@.name == 'size')]"
+                ).exists()
+            )
+            .andExpect(
+                jsonPath(
+                    "\$.paths['/api/destinations'].get.parameters[?(@.name == 'sort')]"
+                ).exists()
+            )
+
     }
 
     private fun createDestination(

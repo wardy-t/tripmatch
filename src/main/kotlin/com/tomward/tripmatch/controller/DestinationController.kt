@@ -30,6 +30,7 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
+import org.springdoc.core.annotations.ParameterObject
 
 @Tag(
     name = "Destinations",
@@ -72,6 +73,7 @@ class DestinationController(
         @RequestParam(required = false) maxBudget: BigDecimal?,
         @RequestParam(required = false) climate: Climate?,
         @RequestParam(required = false) interest: String?,
+        @ParameterObject
         @PageableDefault(size = 20, sort = ["city"])
         pageable: Pageable
     ): ResponseEntity<DestinationPageResponse> {
