@@ -438,6 +438,38 @@ class DestinationControllerIntegrationTest {
             )
     }
 
+    @Test
+    fun `publishes OpenAPI documentation`() {
+        mockMvc.perform(
+            get("/api-docs")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("\$.info.title").value("TripMatch API"))
+            .andExpect(
+                jsonPath("\$.paths['/api/destinations']").exists()
+            )
+            .andExpect(
+                jsonPath(
+                    "\$.paths['/api/destinations/{id}']"
+                ).exists()
+            )
+            .andExpect(
+                jsonPath(
+                    "\$.paths['/api/destinations/recommendations']"
+                ).exists()
+            )
+            .andExpect(
+                jsonPath(
+                    "\$.paths['/api/destinations'].post.responses['201']"
+                ).exists()
+            )
+            .andExpect(
+                jsonPath(
+                    "\$.paths['/api/destinations/{id}'].delete.responses['204']"
+                ).exists()
+            )
+    }
+
     private fun createDestination(
         city: String,
         country: String,
