@@ -14,6 +14,7 @@ import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
+import com.tomward.tripmatch.dto.UpdateDestinationRequest
 
 @Service
 class DestinationService(
@@ -45,6 +46,36 @@ class DestinationService(
             .orElseThrow { DestinationNotFoundException(id) }
 
         return DestinationResponse.from(destination)
+    }
+
+    @Transactional
+    fun update(
+        id: Long,
+        request: UpdateDestinationRequest
+    ): DestinationResponse {
+        val destination = destinationRepository.findById(id)
+            .orElseThrow { DestinationNotFoundException(id) }
+
+        destination.city = request.city.trim()
+        destination.country = request.country.trim()
+        destination.averageCost = request.averageCost
+        destination.climate = request.climate
+        destination.flightTimeHours = request.flightTimeHours
+
+        destination.interests.clear()
+        destination.interests.addAll(
+            request.interests.map { it.trim().lowercase() }
+        )
+
+        return DestinationResponse.from(destination)
+    }
+
+    @Transactional
+    fun delete(id: Long) {
+        val destination = destinationRepository.findById(id)
+            .orElseThrow { DestinationNotFoundException(id) }
+
+        destinationRepository.delete(destination)
     }
 
     @Transactional(readOnly = true)
