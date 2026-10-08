@@ -12,6 +12,12 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import java.net.URI
+import com.tomward.tripmatch.dto.DestinationPageResponse
+import com.tomward.tripmatch.model.Climate
+import org.springframework.data.domain.Pageable
+import org.springframework.data.web.PageableDefault
+import org.springframework.web.bind.annotation.RequestParam
+import java.math.BigDecimal
 
 @RestController
 @RequestMapping("/api/destinations")
@@ -28,6 +34,24 @@ class DestinationController(
         return ResponseEntity
             .created(URI.create("/api/destinations/${destination.id}"))
             .body(destination)
+    }
+
+    @GetMapping
+    fun getDestinations(
+        @RequestParam(required = false) maxBudget: BigDecimal?,
+        @RequestParam(required = false) climate: Climate?,
+        @RequestParam(required = false) interest: String?,
+        @PageableDefault(size = 20, sort = ["city"])
+        pageable: Pageable
+    ): ResponseEntity<DestinationPageResponse> {
+        return ResponseEntity.ok(
+            destinationService.getAll(
+                maxBudget = maxBudget,
+                climate = climate,
+                interest = interest,
+                pageable = pageable
+            )
+        )
     }
 
     @GetMapping("/{id}")

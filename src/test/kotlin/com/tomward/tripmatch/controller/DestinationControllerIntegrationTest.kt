@@ -170,4 +170,110 @@ class DestinationControllerIntegrationTest {
             .andExpect(jsonPath("\$.timestamp").exists())
     }
 
+    @Test
+    fun `filters destinations by budget climate and interest`() {
+        destinationRepository.saveAllAndFlush(
+            listOf(
+                createDestination(
+                    city = "Lisbon",
+                    country = "Portugal",
+                    cost = "650.00",
+                    climate = Climate.WARM,
+                    interests = arrayOf("food", "culture")
+                ),
+                createDestination(
+                    city = "Barcelona",
+                    country = "Spain",
+                    cost = "720.00",
+                    climate = Climate.WARM,
+                    interests = arrayOf("food", "architecture")
+                ),
+                createDestination(
+                    city = "Reykjavik",
+                    country = "Iceland",
+                    cost = "1100.00",
+                    climate = Climate.COLD,
+                    interests = arrayOf("nature", "culture")
+                )
+            )
+        )
+
+        mockMvc.perform(
+            get("/api/destinations")
+                .param("maxBudget", "700.00")
+                .param("climate", "WARM")
+                .param("interest", "FOOD")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("\$.content.length()").value(1))
+            .andExpect(jsonPath("\$.content[0].city").value("Lisbon"))
+            .andExpect(jsonPath("\$.totalElements").value(1))
+            .andExpect(jsonPath("\$.page").value(0))
+            .andExpect(jsonPath("\$.first").value(true))
+            .andExpect(jsonPath("\$.last").value(true))
+    }
+
+    @Test
+    fun `returns destinations with pagination metadata`() {
+        destinationRepository.saveAllAndFlush(
+            listOf(
+                createDestination(
+                    city = "Lisbon",
+                    country = "Portugal",
+                    cost = "650.00",
+                    climate = Climate.WARM,
+                    interests = arrayOf("food")
+                ),
+                createDestination(
+                    city = "Barcelona",
+                    country = "Spain",
+                    cost = "720.00",
+                    climate = Climate.WARM,
+                    interests = arrayOf("architecture")
+                ),
+                createDestination(
+                    city = "Amsterdam",
+                    country = "Netherlands",
+                    cost = "800.00",
+                    climate = Climate.MILD,
+                    interests = arrayOf("culture")
+                )
+            )
+        )
+
+        mockMvc.perform(
+            get("/api/destinations")
+                .param("page", "0")
+                .param("size", "2")
+                .param("sort", "city,asc")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("\$.content.length()").value(2))
+            .andExpect(jsonPath("\$.content[0].city").value("Amsterdam"))
+            .andExpect(jsonPath("\$.content[1].city").value("Barcelona"))
+            .andExpect(jsonPath("\$.page").value(0))
+            .andExpect(jsonPath("\$.size").value(2))
+            .andExpect(jsonPath("\$.totalElements").value(3))
+            .andExpect(jsonPath("\$.totalPages").value(2))
+            .andExpect(jsonPath("\$.first").value(true))
+            .andExpect(jsonPath("\$.last").value(false))
+    }
+
+    private fun createDestination(
+        city: String,
+        country: String,
+        cost: String,
+        climate: Climate,
+        interests: Array<String>
+    ): Destination {
+        return Destination(
+            city = city,
+            country = country,
+            averageCost = BigDecimal(cost),
+            climate = climate,
+            flightTimeHours = BigDecimal("2.5"),
+            interests = interests.toMutableSet()
+        )
+    }
+
 }
