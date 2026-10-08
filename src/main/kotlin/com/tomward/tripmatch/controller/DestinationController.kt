@@ -18,6 +18,11 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
 import org.springframework.web.bind.annotation.RequestParam
 import java.math.BigDecimal
+import com.tomward.tripmatch.dto.DestinationRecommendationResponse
+import jakarta.validation.constraints.DecimalMin
+import jakarta.validation.constraints.Max
+import jakarta.validation.constraints.Min
+import jakarta.validation.constraints.Size
 
 @RestController
 @RequestMapping("/api/destinations")
@@ -50,6 +55,39 @@ class DestinationController(
                 climate = climate,
                 interest = interest,
                 pageable = pageable
+            )
+        )
+    }
+
+    @GetMapping("/recommendations")
+    fun getRecommendations(
+        @RequestParam
+        @DecimalMin("0.01")
+        budget: BigDecimal,
+
+        @RequestParam
+        climate: Climate,
+
+        @RequestParam
+        @DecimalMin("0.1")
+        maxFlightTimeHours: BigDecimal,
+
+        @RequestParam
+        @Size(min = 1, max = 10)
+        interests: Set<String>,
+
+        @RequestParam(defaultValue = "10")
+        @Min(1)
+        @Max(50)
+        limit: Int
+    ): ResponseEntity<List<DestinationRecommendationResponse>> {
+        return ResponseEntity.ok(
+            destinationService.recommend(
+                budget = budget,
+                climate = climate,
+                maxFlightTimeHours = maxFlightTimeHours,
+                interests = interests,
+                limit = limit
             )
         )
     }
