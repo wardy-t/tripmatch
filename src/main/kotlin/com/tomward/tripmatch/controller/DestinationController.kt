@@ -23,6 +23,9 @@ import jakarta.validation.constraints.DecimalMin
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.Size
+import com.tomward.tripmatch.dto.UpdateDestinationRequest
+import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.PutMapping
 
 @RestController
 @RequestMapping("/api/destinations")
@@ -100,4 +103,24 @@ class DestinationController(
             destinationService.getById(id)
         )
     }
+
+    @PutMapping("/{id}")
+    fun updateDestination(
+        @PathVariable id: Long,
+        @Valid @RequestBody request: UpdateDestinationRequest
+    ): ResponseEntity<DestinationResponse> {
+        return ResponseEntity.ok(
+            destinationService.update(id, request)
+        )
+    }
+
+    @DeleteMapping("/{id}")
+    fun deleteDestination(
+        @PathVariable id: Long
+    ): ResponseEntity<Void> {
+        destinationService.delete(id)
+
+        return ResponseEntity.noContent().build()
+    }
+
 }

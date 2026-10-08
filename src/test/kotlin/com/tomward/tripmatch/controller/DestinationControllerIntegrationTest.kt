@@ -22,6 +22,9 @@ import com.tomward.tripmatch.model.Climate
 import com.tomward.tripmatch.model.Destination
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import java.math.BigDecimal
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
+import kotlin.test.assertFalse
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -312,6 +315,127 @@ class DestinationControllerIntegrationTest {
                 jsonPath("\$[1].destination.city").value("Barcelona")
             )
             .andExpect(jsonPath("\$[1].score.total").value(85))
+    }
+
+    @Test
+    fun `updates a destination and replaces its interests`() {
+        val destination = destinationRepository.saveAndFlush(
+            createDestination(
+                city = "Lisbon",
+                country = "Portugal",
+                cost = "650.00",
+                climate = Climate.WARM,
+                interests = arrayOf("food", "culture"),
+                flightTime = "2.8"
+            )
+        )
+
+        val destinationId = requireNotNull(destination.id)
+
+        val requestBody = """
+            {
+            "city": "Porto",
+            "country": "Portugal",
+            "averageCost": 580.00,
+            "climate": "MILD",
+            "flightTimeHours": 2.5,
+            "interests": ["Wine", "Architecture"]
+            }
+        """.trimIndent()
+
+        mockMvc.perform(
+            put("/api/destinations/{id}", destinationId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody)
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("\$.id").value(destinationId))
+            .andExpect(jsonPath("\$.city").value("Porto"))
+            .andExpect(jsonPath("\$.averageCost").value(580.00))
+            .andExpect(jsonPath("\$.climate").value("MILD"))
+            .andExpect(jsonPath("\$.interests.length()").value(2))
+
+        val updatedDestination = destinationRepository
+            .findById(destinationId)
+            .orElseThrow()
+
+        assertEquals("Porto", updatedDestination.city)
+        assertEquals(Climate.MILD, updatedDestination.climate)
+
+        val savedInterests = jdbcTemplate.queryForList(
+            """
+                SELECT interest
+                FROM destination_interests
+                WHERE destination_id = ?
+            """.trimIndent(),
+            String::class.java,
+            destinationId
+        ).toSet()
+
+        assertEquals(
+            setOf("wine", "architecture"),
+            savedInterests
+        )
+    }
+
+    @Test
+    fun `deletes a destination and its interests`() {
+        val destination = destinationRepository.saveAndFlush(
+            createDestination(
+                city = "Lisbon",
+                country = "Portugal",
+                cost = "650.00",
+                climate = Climate.WARM,
+                interests = arrayOf("food", "culture")
+            )
+        )
+
+        val destinationId = requireNotNull(destination.id)
+
+        mockMvc.perform(
+            delete("/api/destinations/{id}", destinationId)
+        )
+            .andExpect(status().isNoContent)
+
+        assertFalse(destinationRepository.existsById(destinationId))
+
+        val interestCount = jdbcTemplate.queryForObject(
+            """
+                SELECT COUNT(*)
+                FROM destination_interests
+                WHERE destination_id = ?
+            """.trimIndent(),
+            Long::class.java,
+            destinationId
+        )
+
+        assertEquals(0L, interestCount)
+    }
+
+    @Test
+    fun `returns 404 when updating a missing destination`() {
+        val requestBody = """
+            {
+            "city": "Porto",
+            "country": "Portugal",
+            "averageCost": 580.00,
+            "climate": "MILD",
+            "flightTimeHours": 2.5,
+            "interests": ["Wine"]
+            }
+        """.trimIndent()
+
+        mockMvc.perform(
+            put("/api/destinations/{id}", 999999)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(requestBody)
+        )
+            .andExpect(status().isNotFound)
+            .andExpect(jsonPath("\$.status").value(404))
+            .andExpect(
+                jsonPath("\$.message")
+                    .value("Destination with id 999999 was not found")
+            )
     }
 
     private fun createDestination(
