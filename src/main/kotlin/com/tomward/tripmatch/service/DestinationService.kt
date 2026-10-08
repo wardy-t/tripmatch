@@ -15,6 +15,8 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 import com.tomward.tripmatch.dto.UpdateDestinationRequest
+import org.springframework.cache.annotation.CacheEvict
+import org.springframework.cache.annotation.Cacheable
 
 @Service
 class DestinationService(
@@ -22,6 +24,10 @@ class DestinationService(
     private val recommendationScorer: RecommendationScorer
 ) {
 
+    @CacheEvict(
+        cacheNames = ["destinationRecommendations"],
+        allEntries = true
+    )
     @Transactional
     fun create(request: CreateDestinationRequest): DestinationResponse {
         val destination = Destination(
@@ -48,6 +54,10 @@ class DestinationService(
         return DestinationResponse.from(destination)
     }
 
+    @CacheEvict(
+        cacheNames = ["destinationRecommendations"],
+        allEntries = true
+    )
     @Transactional
     fun update(
         id: Long,
@@ -70,6 +80,10 @@ class DestinationService(
         return DestinationResponse.from(destination)
     }
 
+    @CacheEvict(
+    cacheNames = ["destinationRecommendations"],
+    allEntries = true
+    )
     @Transactional
     fun delete(id: Long) {
         val destination = destinationRepository.findById(id)
@@ -100,6 +114,11 @@ class DestinationService(
         return DestinationPageResponse.from(destinations)
     }
 
+    @Cacheable(
+        cacheNames = ["destinationRecommendations"],
+        keyGenerator = "recommendationCacheKeyGenerator",
+        sync = true
+    )
     @Transactional(readOnly = true)
     fun recommend(
         budget: BigDecimal,
