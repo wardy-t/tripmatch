@@ -31,6 +31,7 @@ dependencies {
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("tools.jackson.module:jackson-module-kotlin")
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
+	implementation("com.bucket4j:bucket4j_jdk17-core:8.21.0")
 
 	runtimeOnly("org.postgresql:postgresql")
 
