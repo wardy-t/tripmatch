@@ -259,19 +259,75 @@ class DestinationControllerIntegrationTest {
             .andExpect(jsonPath("\$.last").value(false))
     }
 
+    @Test
+    fun `ranks destinations by recommendation score`() {
+        destinationRepository.saveAllAndFlush(
+            listOf(
+                createDestination(
+                    city = "Lisbon",
+                    country = "Portugal",
+                    cost = "650.00",
+                    climate = Climate.WARM,
+                    interests = arrayOf("food", "culture"),
+                    flightTime = "2.8"
+                ),
+                createDestination(
+                    city = "Barcelona",
+                    country = "Spain",
+                    cost = "720.00",
+                    climate = Climate.WARM,
+                    interests = arrayOf("food", "architecture"),
+                    flightTime = "2.5"
+                ),
+                createDestination(
+                    city = "Reykjavik",
+                    country = "Iceland",
+                    cost = "1100.00",
+                    climate = Climate.COLD,
+                    interests = arrayOf("culture", "nature"),
+                    flightTime = "3.0"
+                )
+            )
+        )
+
+        mockMvc.perform(
+            get("/api/destinations/recommendations")
+                .param("budget", "800.00")
+                .param("climate", "WARM")
+                .param("maxFlightTimeHours", "4.0")
+                .param("interests", "food,culture")
+                .param("limit", "2")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("\$.length()").value(2))
+            .andExpect(
+                jsonPath("\$[0].destination.city").value("Lisbon")
+            )
+            .andExpect(jsonPath("\$[0].score.budgetScore").value(35))
+            .andExpect(jsonPath("\$[0].score.climateScore").value(25))
+            .andExpect(jsonPath("\$[0].score.interestScore").value(30))
+            .andExpect(jsonPath("\$[0].score.flightTimeScore").value(10))
+            .andExpect(jsonPath("\$[0].score.total").value(100))
+            .andExpect(
+                jsonPath("\$[1].destination.city").value("Barcelona")
+            )
+            .andExpect(jsonPath("\$[1].score.total").value(85))
+    }
+
     private fun createDestination(
         city: String,
         country: String,
         cost: String,
         climate: Climate,
-        interests: Array<String>
+        interests: Array<String>,
+        flightTime: String = "2.5"
     ): Destination {
         return Destination(
             city = city,
             country = country,
             averageCost = BigDecimal(cost),
             climate = climate,
-            flightTimeHours = BigDecimal("2.5"),
+            flightTimeHours = BigDecimal(flightTime),
             interests = interests.toMutableSet()
         )
     }

@@ -1,20 +1,24 @@
 package com.tomward.tripmatch.service
 
 import com.tomward.tripmatch.dto.CreateDestinationRequest
+import com.tomward.tripmatch.dto.DestinationPageResponse
+import com.tomward.tripmatch.dto.DestinationRecommendationResponse
 import com.tomward.tripmatch.dto.DestinationResponse
 import com.tomward.tripmatch.exception.DestinationNotFoundException
+import com.tomward.tripmatch.model.Climate
 import com.tomward.tripmatch.model.Destination
+import com.tomward.tripmatch.recommendation.RecommendationPreferences
+import com.tomward.tripmatch.recommendation.RecommendationScorer
 import com.tomward.tripmatch.repository.DestinationRepository
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import com.tomward.tripmatch.dto.DestinationPageResponse
-import com.tomward.tripmatch.model.Climate
-import org.springframework.data.domain.Pageable
 import java.math.BigDecimal
 
 @Service
 class DestinationService(
-    private val destinationRepository: DestinationRepository
+    private val destinationRepository: DestinationRepository,
+    private val recommendationScorer: RecommendationScorer
 ) {
 
     @Transactional
@@ -63,5 +67,46 @@ class DestinationService(
         )
 
         return DestinationPageResponse.from(destinations)
+    }
+
+    @Transactional(readOnly = true)
+    fun recommend(
+        budget: BigDecimal,
+        climate: Climate,
+        maxFlightTimeHours: BigDecimal,
+        interests: Set<String>,
+        limit: Int
+    ): List<DestinationRecommendationResponse> {
+        val preferences = RecommendationPreferences(
+            budget = budget,
+            climate = climate,
+            maxFlightTimeHours = maxFlightTimeHours,
+            interests = interests
+        )
+
+        return destinationRepository.findAll()
+            .map { destination ->
+                val score = recommendationScorer.calculate(
+                    destination = destination,
+                    preferences = preferences
+                )
+
+                DestinationRecommendationResponse.from(
+                    destination = destination,
+                    score = score
+                )
+            }
+            .sortedWith(
+                compareByDescending<DestinationRecommendationResponse> {
+                    it.score.total
+                }
+                    .thenBy { it.destination.averageCost }
+                    .thenBy { it.destination.city }
+            )
+            .take(limit.coerceIn(1, MAX_RECOMMENDATION_LIMIT))
+    }
+
+    companion object {
+        const val MAX_RECOMMENDATION_LIMIT = 50
     }
 }
