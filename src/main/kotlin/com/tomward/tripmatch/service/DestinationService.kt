@@ -7,6 +7,10 @@ import com.tomward.tripmatch.model.Destination
 import com.tomward.tripmatch.repository.DestinationRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import com.tomward.tripmatch.dto.DestinationPageResponse
+import com.tomward.tripmatch.model.Climate
+import org.springframework.data.domain.Pageable
+import java.math.BigDecimal
 
 @Service
 class DestinationService(
@@ -37,5 +41,27 @@ class DestinationService(
             .orElseThrow { DestinationNotFoundException(id) }
 
         return DestinationResponse.from(destination)
+    }
+
+    @Transactional(readOnly = true)
+    fun getAll(
+        maxBudget: BigDecimal?,
+        climate: Climate?,
+        interest: String?,
+        pageable: Pageable
+    ): DestinationPageResponse {
+        val normalisedInterest = interest
+            ?.trim()
+            ?.lowercase()
+            ?.takeIf { it.isNotEmpty() }
+
+        val destinations = destinationRepository.findFiltered(
+            maxBudget = maxBudget,
+            climate = climate,
+            interest = normalisedInterest,
+            pageable = pageable
+        )
+
+        return DestinationPageResponse.from(destinations)
     }
 }
