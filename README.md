@@ -80,6 +80,7 @@ The application follows a layered structure:
 
 - [ADR 0001: Layered application architecture](docs/architecture/0001-layered-architecture.md)
 - [ADR 0002: Deterministic recommendation scoring](docs/architecture/0002-deterministic-recommendation-scoring.md)
+- [ADR 0003: Traffic management](docs/architecture/0003-traffic-management.md)
 
 ## Running with Docker
 
@@ -210,6 +211,19 @@ Current coverage gates:
 
 - Line coverage: 90%
 - Branch coverage: 60%
+
+## Traffic and load testing
+
+TripMatch caps destination pages at 100 records and applies a configurable
+token-bucket limit to the recommendation endpoint.
+
+Run the containerised traffic test:
+
+```bash
+docker compose up --build -d
+docker compose restart app
+docker compose --profile load-test run --rm k6
+```
 
 ## CI/CD and repository automation
 
