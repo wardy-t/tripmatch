@@ -26,6 +26,7 @@ time.
 - Springdoc OpenAPI
 - GitHub Actions
 - CodeQL and Dependabot
+- Caffeine
 
 ## Features
 
@@ -40,6 +41,7 @@ time.
 - Containerised application and database
 - Integration tests using disposable PostgreSQL containers
 - Automated coverage enforcement and security analysis
+- Bounded caching for repeated recommendation requests
 
 ## Recommendation scoring
 
@@ -81,6 +83,7 @@ The application follows a layered structure:
 - [ADR 0001: Layered application architecture](docs/architecture/0001-layered-architecture.md)
 - [ADR 0002: Deterministic recommendation scoring](docs/architecture/0002-deterministic-recommendation-scoring.md)
 - [ADR 0003: Traffic management](docs/architecture/0003-traffic-management.md)
+- [ADR 0004: Recommendation caching](docs/architecture/0004-recommendation-caching.md)
 
 ## Running with Docker
 
@@ -224,6 +227,24 @@ docker compose up --build -d
 docker compose restart app
 docker compose --profile load-test run --rm k6
 ```
+## Recommendation caching
+
+Repeated recommendation requests are cached for five minutes using Caffeine.
+
+Cache entries use normalised preference keys so equivalent decimal values,
+interest capitalisation and interest ordering share the same result.
+
+The cache:
+
+- Contains no more than 500 entries
+- Prevents duplicate calculation of simultaneous identical misses
+- Is cleared after destination creation, update or deletion
+- Stores response DTOs rather than persistence entities
+- Does not replace PostgreSQL as the source of truth
+
+The current cache is local to one application instance. A scaled deployment
+would evaluate a distributed cache using measured hit rates, latency and
+database utilisation.
 
 ## CI/CD and repository automation
 
